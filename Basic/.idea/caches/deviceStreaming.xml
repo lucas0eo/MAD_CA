@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DeviceStreaming">
     <option name="deviceSelectionList">
@@ -1253,11 +1254,5 @@
         </PersistentDeviceSelectionData>
       </list>
     </option>
-  </component>
-  <component name="GithubDefaultAccount">
-    <option name="defaultAccountId" value="27311386-1dc3-4c56-8f09-7d2236127f19" />
-  </component>
-  <component name="ProjectRootManager">
-    <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>
