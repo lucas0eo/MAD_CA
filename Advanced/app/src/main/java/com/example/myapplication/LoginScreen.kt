@@ -95,6 +95,8 @@ fun LoginScreen(
                     scope.launch {
                         val isValid = validateLogin(context, username, password)
                         if(isValid){
+                            val sharedPref = context.getSharedPreferences("game_prefs", Context.MODE_PRIVATE)
+                            sharedPref.edit().putString("logged_in_user", username).apply()
                             onLoginSuccess()
                         }else{
                             Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT).show()

@@ -9,7 +9,7 @@ import com.example.myapplication.data.entity.ScoreEntity
 @Dao
 interface ScoreDAO {
     @Query("SELECT * FROM score WHERE userId = :userId ORDER BY score DESC")
-    suspend fun getHistoryForUser(userId: Int): List<ScoreEntity>
+    suspend fun getHistoryForUser(userId: Long): List<ScoreEntity>
 
     @Insert
     suspend fun insertScore(score: ScoreEntity)
@@ -24,6 +24,4 @@ interface ScoreDAO {
     """)
         fun getLeaderboard(): kotlinx.coroutines.flow.Flow<List<ScoreEntity>>
     }
-
-
 }

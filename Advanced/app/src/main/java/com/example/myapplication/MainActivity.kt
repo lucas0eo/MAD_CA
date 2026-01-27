@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -47,13 +48,17 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.composable
+import com.example.myapplication.data.entity.ScoreEntity
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +79,8 @@ class MainActivity : ComponentActivity() {
                     composable("Settings") {
                         SettingScreen(navController = navController)
                     }
+
+
                 }
             }
         }
@@ -85,15 +92,35 @@ class MainActivity : ComponentActivity() {
 fun GameScreen(navController: androidx.navigation.NavController) {
 
     val context = LocalContext.current
+    val db = remember { AppDatabase.get(context) }
     val sharedPref = remember { context.getSharedPreferences("game_prefs", Context.MODE_PRIVATE) }
     var score by remember { mutableIntStateOf(0) }
     var timeLeft by remember { mutableIntStateOf(30) }
     var moleIndex by remember { mutableIntStateOf(-1) }
     var isGameRunning by remember { mutableStateOf(false) }
-    var highScore by remember { mutableIntStateOf(sharedPref.getInt("high_score", 0)) }
+    var highScore by remember { mutableIntStateOf(0) }
     var showGameOver by remember { mutableStateOf(false) }
     var buttonClick by remember { mutableIntStateOf(0) }
+    val currentUsername = sharedPref.getString("logged_in_user", null)
 
+    var currentUserId by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(currentUsername) {
+        if (currentUsername != null) {
+            val userEntity = db.userDao().getUser(currentUsername)
+            currentUserId = userEntity?.userId
+
+            if (currentUserId != null) {
+                val history = db.scoreDao().getHistoryForUser(currentUserId!!)
+
+                if (history.isNotEmpty()) {
+                    highScore = history[0].score
+                } else {
+                    highScore = 0
+                }
+            }
+        }
+    }
 
     LaunchedEffect(isGameRunning) {
         if (isGameRunning) {
@@ -104,7 +131,16 @@ fun GameScreen(navController: androidx.navigation.NavController) {
             isGameRunning = false
             if (score > highScore) {
                 highScore = score
-                sharedPref.edit().putInt("high_score", score).apply()
+                if (currentUserId != null) {
+                    val newScore = ScoreEntity(
+                        userId = currentUserId!!,
+                        score = highScore,
+                        timestamp = System.currentTimeMillis()
+                    )
+                    launch {
+                        db.scoreDao().insertScore(newScore)
+                    }
+                }
             }
             showGameOver = true
         }
@@ -126,6 +162,16 @@ fun GameScreen(navController: androidx.navigation.NavController) {
             actions = {
                 IconButton(onClick = { navController.navigate("Settings") }) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
+                }
+
+                IconButton(onClick = {
+                    sharedPref.edit().remove("logged_in_user").apply()
+
+                    val intent = Intent(context, LoginScreen::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    context.startActivity(intent)
+                }) {
+                    Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
                 }
             }
         )
