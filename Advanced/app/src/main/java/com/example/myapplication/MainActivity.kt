@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -51,9 +52,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.composable
@@ -78,6 +82,10 @@ class MainActivity : ComponentActivity() {
 
                     composable("Settings") {
                         SettingScreen(navController = navController)
+                    }
+
+                    composable("Leaderboard") {
+                        LeaderboardScreen(navController = navController)
                     }
 
 
@@ -172,6 +180,10 @@ fun GameScreen(navController: androidx.navigation.NavController) {
                     context.startActivity(intent)
                 }) {
                     Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
+                }
+
+                IconButton(onClick = { navController.navigate("Leaderboard") }) {
+                    Icon(Icons.Filled.List, contentDescription = "Leaderboard")
                 }
             }
         )
@@ -274,6 +286,52 @@ fun SettingScreen(navController: androidx.navigation.NavController){
         ){
             Text("Settings Screen", modifier = Modifier.padding(32.dp))
 
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LeaderboardScreen(navController: androidx.navigation.NavController){
+    val context = LocalContext.current
+    val db = remember { AppDatabase.get(context) }
+    val sharedPref = remember { context.getSharedPreferences("game_prefs", Context.MODE_PRIVATE) }
+    val currentUsername = sharedPref.getString("logged_in_user", null)
+    var currentUserId by remember { mutableStateOf<Long?>(null) }
+    val leaderboard by db.scoreDao().getLeaderboard().collectAsState(initial = emptyList())
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().statusBarsPadding(),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Game")
+            }
+            Text("Leaderboard")
+        }
+        Spacer(modifier = Modifier.padding(32.dp))
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(leaderboard.size) { index ->
+                val item = leaderboard[index]
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "${index + 1}. ${item.username}", style = MaterialTheme.typography.bodyLarge)
+                    Text(text = "${item.score}", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
         }
     }
 }
