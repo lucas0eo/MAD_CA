@@ -6,59 +6,76 @@ This is a development done to satisfy the assignment portion for module “Mobil
 Used Google's Gemini for debugging and problem solving.
 
 ## First example of Code refactored:
-### Prompt: Help to link login screen and game screen
+### Prompt: 
+Help to link login screen and game screen
 ### Sample Code Given:
+```kotlin
 // In LoginScreen.kt (inside the onCreate or Composable where you handle success)
 LoginScreen(
-onLoginSuccess = { username -> // Change this to accept a String
-val intent = Intent(this@LoginScreen, MainActivity::class.java)
-intent.putExtra("USER_NAME", username) // Pack the username
-startActivity(intent)
-finish() // Close login screen so back button exits app instead of going to login
-},
-// ... rest of modifiers
+    onLoginSuccess = { username -> // Change this to accept a String
+        val intent = Intent(this@LoginScreen, MainActivity::class.java)
+        intent.putExtra("USER_NAME", username) // Pack the username
+        startActivity(intent)
+        finish() // Close login screen so back button exits app instead of going to login
+    },
+    // ... rest of modifiers
 )
 
 // You also need to update the Composable definition to pass the String back
 @Composable
 fun LoginScreen(
-onLoginSuccess: (String) -> Unit, // Changed from () -> Unit
-modifier: Modifier = Modifier
+    onLoginSuccess: (String) -> Unit, // Changed from () -> Unit
+    modifier: Modifier = Modifier
 ) {
-// ... inside the button onClick:
-scope.launch {
-val isValid = validateLogin(context, username, password)
-if (isValid) {
-onLoginSuccess(username) // Pass the actual username text
-} else { ... }
+    // ... inside the button onClick:
+    scope.launch {
+        val isValid = validateLogin(context, username, password)
+        if (isValid) {
+            onLoginSuccess(username) // Pass the actual username text
+        } else { ... }
+    }
 }
-}
+```
 
 ### Refactored Code
+```kotlin
+@Composable
 fun LoginScreen(
-onLoginSuccess: () -> Unit,
-modifier: Modifier = Modifier
-){
-var username by rememberSaveable {mutableStateOf("") }
-var password by rememberSaveable {mutableStateOf("")}
-// ...
-Button (
-onClick = {
-scope.launch {
-val isValid = validateLogin(context, username, password)
-if(isValid){
-val sharedPref = context.getSharedPreferences("game_prefs", Context.MODE_PRIVATE)
-sharedPref.edit().putString("logged_in_user", username).apply()
-onLoginSuccess()
-}else{
-Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT).show()
+    onLoginSuccess: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var username by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+
+    // UI Layout code...
+
+    Button(
+        onClick = {
+            scope.launch {
+                val isValid = validateLogin(context, username, password)
+                if (isValid) {
+                    // Save session data locally so it persists across app restarts
+                    val sharedPref = context.getSharedPreferences("game_prefs", Context.MODE_PRIVATE)
+                    sharedPref.edit().putString("logged_in_user", username).apply()
+
+                    onLoginSuccess() // Trigger navigation
+                } else {
+                    Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    ) {
+        Text("Login")
+    }
 }
+```
 
 I Refactored the storing of the username from intent to use sharedprefs as I'm more familiar with using sharedPrefs.
 I learnt/remembered how to use Intents to navigate between screens.
 
 ##  Example of LLM Debugging:
-### Prompt: db.userDao().insertUser(UserEntity(username, password)) giving me red cause userId not there
+### Prompt: 
+db.userDao().insertUser(UserEntity(username, password)) giving me red cause userId not there
 ### Sample Code Given:
 
 UserEntity(username = username, password = password)
